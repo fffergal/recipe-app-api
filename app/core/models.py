@@ -45,3 +45,10 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class Ingredient(models.Model):
+    recipe = models.ForeignKey(
+        Recipe, related_name="ingredients", on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)

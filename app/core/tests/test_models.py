@@ -47,3 +47,17 @@ class ModelTests(TestCase):
             description="Sample recipe description.",
         )
         self.assertEqual(str(recipe), recipe.title)
+
+    def test_delete_recipe_deletes_ingredients(self):
+        user = get_user_model().objects.create_user("test@example.com", "testpass123")
+        recipe = models.Recipe.objects.create(
+            user=user,
+            title="Sample recipe name",
+            time_minutes=5,
+            price=Decimal("5.50"),
+            description="Sample recipe description.",
+        )
+        models.Ingredient.objects.create(recipe=recipe, name="beef")
+        self.assertEqual(models.Ingredient.objects.count(), 1)
+        recipe.delete()
+        self.assertEqual(models.Ingredient.objects.count(), 0)

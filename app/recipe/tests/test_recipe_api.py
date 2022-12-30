@@ -6,7 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Recipe
+from core.models import Ingredient, Recipe
 from recipe.serializers import RecipeDetailSerializer, RecipeSerializer
 
 
@@ -145,3 +145,32 @@ class PrivateRecipeApiTests(TestCase):
         res = self.client.delete(url)
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(Recipe.objects.filter(id=recipe.id).exists())
+
+    def test_create_recipe_with_ingredients(self):
+        payload = {
+            "title": "Sample recipe",
+            "time_minutes": 30,
+            "price": Decimal("5.99"),
+            "ingredients": [{"name": "beef"}],
+        }
+        res = self.client.post(RECIPES_URL, data=payload, format="json")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        recipe = Recipe.objects.get(id=res.data["id"])
+        serializer = RecipeSerializer(recipe)
+        self.assertEqual(serializer.data["ingredients"], payload["ingredients"])
+
+    def test_serialize_recipe_with_ingredients(self):
+        recipe = create_recipe(user=self.user)
+        Ingredient.objects.create(recipe=recipe, name="beef")
+        serializer = RecipeSerializer(recipe)
+        self.assertEqual(serializer.data["ingredients"], [{"name": "beef"}])
+
+    def test_patch_recipe_with_ingredients(self):
+        recipe = create_recipe(user=self.user)
+        Ingredient.objects.create(recipe=recipe, name="beef")
+        payload = {"ingredients": [{"name": "spinach"}]}
+        url = detail_url(recipe.id)
+        res = self.client.patch(url, payload, format="json")
+        serializer = RecipeSerializer(recipe)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(serializer.data["ingredients"], payload["ingredients"])
